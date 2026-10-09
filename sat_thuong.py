@@ -67,13 +67,34 @@ for v in V:
 
     
 # Cài đặt cái lan truyền lửa, xét theo cả 2 chiều là (u,v) và (v,u)
+#Nếu u đang cháy ở bước trước thì hàng xóm v của nó ở bước này hoặc được bảo vệ 
+# hoặc bị cháy
 
-for u,v in E:
-    for t in range (1, T + 1):
-        solver.add_clause([-b_var[(u, t-1)], b_var[(v, t)], d_var[(v, t)]]) #Phép 9
-
-
+for v in V: 
+    for u in G.neighbors(v):    
+        for t in range (1, T + 1 ):
+            solver.add_clause([-b_var[(u, t-1)], d_var[(v, t)], b_var[(v, t)]])  #Phép 9
 
 # Đã xong những cái ràng buộc cơ bản cũ, vẫn như vậy
 # Giờ có mấy cái mới bắt đầu làm 
+
+
+
+# 1 đỉnh nó chỉ có thể cháy nếu như nó đã cháy ở bước trước mà không được bảo vệ
+# Hoặc là đỉnh kề của nó cháy ở bước trước mà cái đỉnh đó không được bảo vệ ở bước đó
+
+
+for v in V:
+    for u in G.neighbors(v):
+        for t in range (1, T + 1):
+            solver.add_clause([-b_var[(v, t)], b_var[(v, t-1)], b_var[(u, t-1)]]) #Phép 10
+
+
+# Đang chưa chắc về cái cách cài assumption cho h 
+#Phép này sử dụng để chốt hội tụ cho lửa lan 
+for v in V:
+    for u in G.neighbors(v):
+        for t in range (1, T + 1):
+            solver.add_clause([-h_var[(t)], -b_var[(u, t)], b_var[(v, t)], d_var[(v, t)]]) #Phép 11
+
 
