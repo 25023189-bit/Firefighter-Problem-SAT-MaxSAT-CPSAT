@@ -13,64 +13,50 @@ from pysat.solvers import Solver
 vpool = IDPool()
 b_var = {}
 d_var = {}
+a_var = {}
+h_var = {}
 
-for t in range (T + 1):
-    for v in V:
+# Khai báo biến
+for v in V:
+    for t in range(T + 1):
         b_var[(v, t)] = vpool.id(f'b_{v}_{t}')
         d_var[(v, t)] = vpool.id(f'd_{v}_{t}')
+        a_var[(v, t)] = vpool.id(f'a_{v}_{t}')
+        h_var[(v, t)] = vpool.id(f'h_{v}_{t}')  
+
+# Ràng buộc ban đầu (khi t = 0)
 
 for v in V:
     if v in Binit:
-        clauses.append([b_var[(v, 0)]])
-    else:
-        clauses.append([-b_var[(v, 0)]])
-    clauses.append([-d_var[(v, 0)]])
+        solver.add_clause([b_var[(v, 0)]]) # Phép 1 
+    else :
+        solver.add_clause([-b_var[(v, 0)]]) # Phép 2
+    solver.add_clause([-d_var[(v, 0)]]) # Phép 3
 
-for t in range (1, T + 1):
-    for v in V:
-        clauses.append([-b_var[(v, t-1)], b_var[(v, t)]])
-        clauses.append([-d_var[(v, t-1)], d_var[(v, t)]])
-
-for t in range (T + 1):
-    for v in V:
-    clauses.append([-b_var[(v, t)], -d_var[(v, t)]])
+# Duy trì trạng thái khi t >= 1
 
 for v in V:
-    for u in G.neighbors(v):
-        for t in range (1, T + 1):
-            clauses.append([-b_var[(v, t-1)], b_var[(u, t)], d_var[(u, t)]])
+    for t in range(1, T + 1):
+        solver.add_clause([-b_var[(v, t-1)], b_var[(v, t)]]) #Phép 4
+        solver.add_clause([-d_var[(v, t-1)], d_var[(v, t)]]) #Phép 5
 
-for t in range (1, T + 1):
-    moi_duoc_bao_ve_tai_t = []
-    for v in V:
-        x_vt = vpool.id(f'x_{v}_{t}')
-        d_vt = d_var[(v, t)]
-        d_vt_truoc = d_var[(v, t - 1)]
+# Loại trừ tương khắc (không thể vừa cháy vừa được bảo vệ)
 
-        clauses.append([-x_vt, d_vt])
-        clauses.append([-x_vt, -d_vt_truoc])
-        clauses.append([x_vt, -d_vt, d_vt_truoc])
-
-        moi_duoc_bao_ve_tai_t.append(x_vt)
-
-    cnf_atmost = CardEnc.atmost(lits=moi_duoc_bao_ve_tai_t, bound=D, vpool=vpool, encoding=EncType.seqcounter)
-
-    clauses.extend(cnf_atmost.clauses)
-    
 for v in V:
-    for u in G.neighbors(v):
-        for t in range (1, T + 1):
-            clauses.append([-b_var[(v, t-1)], b_var[(u, t)], d_var[(u, t)]])
+    for t in range (1, T + 1):
+        solver.add_clause([-b_var[(v, t)], -d_var[(v, t)]]) #Phép 6
 
 
+# Cài đặt biến a mới (khi 1 có thằng lính được đặt tại t thì đánh dấu a)
+# Đổi cái phép tương đương thành 3 mệnh đề 
 
-
-#Thay đổi mới thử xem như thế nào 
-
-
-
-
-
-
+for v in V:
+    for t in range (1, T + 1):
+        # Nếu có lính mới ở v thì v đang được bảo vệ ở bước này
+        solver.add_clause([d_var[(v, t)], - a_var[(v, t)]]) #Phép 7
+        # Nếu có lính mới ở v thì v chưa được bảo vệ ở bước trước
+        solver.add_clause([-d_var[(v, t-1)],- a_var[(v, t)]]) #Phép 8
+        # Nếu bây giờ v được bảo vệ mà bước trước chưa, thì a phải đúng
+        solver.add_clause([a_var[(v, t)], d_var[(v, t-1)],- d_var[(v, t)]]) #Phép 9
 
 
