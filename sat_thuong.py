@@ -91,7 +91,8 @@ for v in V:
 
 
 # Đang chưa chắc về cái cách cài assumption cho h 
-#Phép này sử dụng để chốt hội tụ cho lửa lan 
+#Phép này sử dụng để chốt hội tụ cho lửa lan
+#Khả năng là bước cuối mới bắt đầu cài solver vào trong assumption
 for v in V:
     for u in G.neighbors(v):
         for t in range (1, T + 1):
