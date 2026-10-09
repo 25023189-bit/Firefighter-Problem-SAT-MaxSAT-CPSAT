@@ -53,10 +53,27 @@ for v in V:
 for v in V:
     for t in range (1, T + 1):
         # Nếu có lính mới ở v thì v đang được bảo vệ ở bước này
-        solver.add_clause([d_var[(v, t)], - a_var[(v, t)]]) #Phép 7
+        solver.add_clause([-a_var[(v, t)], d_var[(v, t)]]) #Phép 7
         # Nếu có lính mới ở v thì v chưa được bảo vệ ở bước trước
-        solver.add_clause([-d_var[(v, t-1)],- a_var[(v, t)]]) #Phép 8
+        solver.add_clause([-a_var[(v, t)], -d_var[(v, t-1)]]) #Phép 7
         # Nếu bây giờ v được bảo vệ mà bước trước chưa, thì a phải đúng
-        solver.add_clause([a_var[(v, t)], d_var[(v, t-1)],- d_var[(v, t)]]) #Phép 9
+        solver.add_clause([a_var[(v, t)], -d_var[(v, t)], d_var[(v, t-1)]]) #Phép 7
 
+    # Mỗi bước chỉ được đặt tối đa D lính mới
+    lits = [a_var[(v, t)] for v in V]
+    card = CardEnc.atmost(lits=lits, bound=D, vpool=vpool, encoding=EncType.seqcounter)
+    for clause in card.clauses:
+        solver.add_clause(clause)   #Phép 8
+
+    
+# Cài đặt cái lan truyền lửa, xét theo cả 2 chiều là (u,v) và (v,u)
+
+for u,v in E:
+    for t in range (1, T + 1):
+        solver.add_clause([-b_var[(u, t-1)], b_var[(v, t)], d_var[(v, t)]]) #Phép 9
+
+
+
+# Đã xong những cái ràng buộc cơ bản cũ, vẫn như vậy
+# Giờ có mấy cái mới bắt đầu làm 
 
