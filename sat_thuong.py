@@ -9,6 +9,7 @@ import networkx as nx
 from pysat.card import CardEnc, EncType
 from pysat.formula import IDPool
 from pysat.solvers import Solver
+from pysat.card import ITotalizer
 
 vpool = IDPool()
 b_var = {}
@@ -98,4 +99,38 @@ for v in V:
         for t in range (1, T + 1):
             solver.add_clause([-h_var[(t)], -b_var[(u, t)], b_var[(v, t)], d_var[(v, t)]]) #Phép 11
 
+
+# Hàm mục tiêu, sài Itotalizer
+
+T_check = T
+b_lits_at_T = [b_var[(v, T_check)] for v in V]  # Chỉ lấy danh sách b_{v, T}
+max_K = len(V)
+it = ITotalizer(lits=b_lits_at_T, ubound=max_K, top_id=vpool.top)
+for clause in it.cnf.clauses:
+    solver.add_clause(clause)
+
+
+# Cài cái vòng lặp liên tục để nó tự chạy theo T tự thử 
+
+h_assumptions = [h_var[T_check]] + [-h_var[t] for t in range(1, T_check)]
+
+found_opt = False
+for K in range(0, max_K + 1):
+    
+    # phủ định lại cái thằng it thì nó sẽ được cái nhỏ hơn haowjc bằng vì cái gốc của nó là lớn hơn
+    k_assumption = [-it.rhs[K]] if K < max_K else []
+    # Cộng tất cả các assumption lại với nhau
+    full_assumptions = h_assumptions + k_assumption
+
+    is_sat = solver.solve(assumptions=full_assumptions)
+    
+    if is_sat:
+        print(f"Số đỉnh cháy tối đa K = {K} tại T = {T_check}")
+        model = solver.get_model()
+        found_opt = True
+        break
+    else:
+        print(f"Không thể dập lửa với K = {K}")
+
+it.delete()  
 
