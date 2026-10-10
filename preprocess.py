@@ -22,4 +22,17 @@ def menh_de_don (solver, V, b_var, delta, t_bat_dau, t_ket_thuc):
             solver.add_clause([-b_var[(v, t)]])   #Phép 14
 
 
-  
+  # Cận dưới
+  def LB (G,Binit,D):
+    B = set(Binit) # đổi cái tập đỉnh cháy có nhiều đỉnh gọi chung là B 
+    # Tập hợp hàng xóm của B trừ chính nó 
+    ke_B = {u for v in B for u in G.neighbors(v)} - B     # N(B) \ B
+    return len(B) + max(0, len(ke_B) - D) # phép 15
+
+
+# Cận trên dùng Greedy
+
+
+
+
+   
