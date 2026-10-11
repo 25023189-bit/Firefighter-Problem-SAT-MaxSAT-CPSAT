@@ -193,4 +193,3 @@ if __name__ == "__main__":
         print(f"Bắt đầu giải với T={T}, D={D}...\n")
         
         tim_can_tren(G, V, Binit, T, D)
-    
