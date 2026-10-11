@@ -14,7 +14,10 @@ from pysat.card import ITotalizer
 from GraphParser import doc_du_lieu_do_thi
 from Tien_Xu_Li import tien_xu_ly
 
+
 def giai_sat_thuong(G, V, Binit, T, D):
+    thoi_gian_bat_dau_encode = time.perf_counter()
+    solver = Solver(name='glucose3')
     vpool = IDPool()
     b_var = {}
     d_var = {}
@@ -113,12 +116,15 @@ def giai_sat_thuong(G, V, Binit, T, D):
     for clause in it.cnf.clauses:
         solver.add_clause(clause)
 
+    t_encode = time.perf_counter() - thoi_gian_bat_dau_encode
+    thoi_gian_bat_dau_solve = time.perf_counter()
 
     # Cài cái vòng lặp liên tục để nó tự chạy theo T tự thử 
 
     h_assumptions = [h_var[T_check]] + [-h_var[t] for t in range(1, T_check)]
 
     found_opt = False
+    best_K = None
     for K in range(0, max_K + 1):
         
         # phủ định lại cái thằng it thì nó sẽ được cái nhỏ hơn haowjc bằng vì cái gốc của nó là lớn hơn
@@ -132,11 +138,19 @@ def giai_sat_thuong(G, V, Binit, T, D):
             print(f"Số đỉnh cháy tối đa K = {K} tại T = {T_check}")
             model = solver.get_model()
             found_opt = True
+            best_K = K
             break
         else:
             print(f"Không thể dập lửa với K = {K}")
 
     it.delete()  
+
+    t_solve = time.perf_counter() - thoi_gian_bat_dau_solve
+    so_bien = vpool.top
+
+    return found_opt, best_K, t_encode, t_solve, so_bien
+
+
 
 # Dùng AI viết main
 
