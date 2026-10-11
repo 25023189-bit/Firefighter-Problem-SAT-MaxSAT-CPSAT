@@ -141,37 +141,34 @@ def giai_sat_thuong(G, V, Binit, T, D):
 # Dùng AI viết main
 
 if __name__ == "__main__":
-    # Đường dẫn file dữ liệu
+    # Thư mục và tên file
     thu_muc_du_lieu = "BBGRL"
     ten_file = "50_ep0.1_0_gilbert_1.in"
     duong_dan_hoan_chinh = os.path.join(thu_muc_du_lieu, ten_file)
     
-    # Đọc đồ thị
     G, V, Binit = doc_du_lieu_do_thi(duong_dan_hoan_chinh)
     
     if G is not None:
-        D = 2  # Số lính cứu hỏa mỗi bước
+    
+        T = 50
+        D = 2
         
-        # 1. Gọi tiền xử lý đồ thị trước
-        txl = tien_xu_ly(G, V, Binit, D)
+        print(f"Bắt đầu giải với T={T}, D={D}...\n")
         
-        # 2. In 1 dòng thông tin cơ bản: đỉnh, cạnh, số lính
+        # Chạy SAT
+        is_sat, K_toi_uu, t_encode, t_solve, so_bien = giai_sat_thuong(G, V, Binit, T, D)
+        
+        # Gom thông tin để in bảng
         so_canh = G.number_of_edges()
-        print(f"{ten_file} | |V|={len(V)} | |E|={so_canh} | lính(D)={D}")
-        
-        # 3. Chạy SAT hoặc chốt luôn nếu tiền xử lý đã ra tối ưu
-        if txl.get('xong'):
-            print(f"status: optimal (Số đỉnh cháy tối đa: {txl['UB']})")
-        else:
-            T_check = txl['T_ht']
-            
-            # GỌI HÀM GIẢI SAT CỦA BẠN TẠI ĐÂY
-            # Ví dụ: is_sat, K = giai_sat_thuong(G, V, Binit, T_check, D, txl['delta'])
-            
-            # Giả lập biến kết quả trả về từ hàm giải SAT (bạn ghép hàm của bạn vào thay đoạn này)
-            is_sat = True 
-            
-            if is_sat:
-                print("status: optimal")
-            else:
-                print("status: unsat")
+        trang_thai = "optimal" if is_sat else "unsat"
+        muc_tieu = str(K_toi_uu) if is_sat else "-"
+        ten_instance = "graph_1" # Có thể thay bằng ten_file nếu muốn
+
+        # In bảng định dạng chuẩn
+        print("="*95)
+        print("BẢNG 1: THỐNG KÊ CẤU TRÚC VÀ THỜI GIAN GIẢI SAT")
+        print("="*95)
+        print(f"{'Instance':<12} | {'|V|':<5} | {'|E|':<5} | {'vars':<8} | {'t(encode)':<10} | {'t(solve)':<10} | {'status':<10} | {'objective':<9}")
+        print("-" * 95)
+        print(f"{ten_instance:<12} | {len(V):<5} | {so_canh:<5} | {so_bien:<8} | {t_encode:<10.4f} | {t_solve:<10.4f} | {trang_thai:<10} | {muc_tieu:<9}")
+        print("="*95)
