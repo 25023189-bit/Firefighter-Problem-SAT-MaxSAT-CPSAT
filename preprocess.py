@@ -1,4 +1,9 @@
  from collections import deque
+import random
+import math
+
+
+
 
 # Đầu tiên là cần tìm khoảng cách ngắn nhất từ tập đỉnh cháy đến các đỉnh khác, 
 # để biết được cái đỉnh nào có thể bị cháy trong bước tiếp theo
@@ -23,7 +28,7 @@ def menh_de_don (solver, V, b_var, delta, t_bat_dau, t_ket_thuc):
 
 
   # Cận dưới
-  def LB (G,Binit,D):
+  def can_duoi (G,Binit,D):
     B = set(Binit) # đổi cái tập đỉnh cháy có nhiều đỉnh gọi chung là B 
     # Tập hợp hàng xóm của B trừ chính nó 
     ke_B = {u for v in B for u in G.neighbors(v)} - B     # N(B) \ B
@@ -32,7 +37,7 @@ def menh_de_don (solver, V, b_var, delta, t_bat_dau, t_ket_thuc):
 
 # Cận trên dùng Greedy
 
-def tham_lam (G, Binit, D, quy_tac, rng=None):
+def mot_vong_tham_lam (G, Binit, D, quy_tac, rng=None):
 # lấy cái rgn trong cái python random để quy số lúc làm cái bước tham lam cuối
    chay = set(Binit)
    bao_ve = set()
@@ -55,7 +60,7 @@ def tham_lam (G, Binit, D, quy_tac, rng=None):
          # key là để Tham số chỉ định tiêu chí tùy chỉnh để Python 
          # dùng làm cơ sở so sánh và sắp xếp các phần tử
 
-         # cái lalmda là 1 cái cài cho key để định nghĩa được cái hàm (quy tắc sắp xếp)
+         # cái lamda là 1 cái cài cho key để định nghĩa được cái hàm (quy tắc sắp xếp)
 
       else:
          chon = rng.sample(sorted(de_doa), so_chon)                         # C3
@@ -67,5 +72,41 @@ def tham_lam (G, Binit, D, quy_tac, rng=None):
       chay |= (de_doa - set(chon))               # đỉnh bị đe dọa mà không được bảo vệ thì cháy
       so_vong += 1
 
+# Bắt đầu chọn cái UB và To, thời gian mà vừa chạy xong 1 lần 
+def can_tren_tham_lam (G, Binit, D, so_lan_ngau_nhien=20, seed=0):
+   rng = random.Random(seed)
+   ket_qua = [mot_vong_tham_lam (G,Binit,D,'id'),mot_vong_tham_lam(G, Binit, D, 'bac')]
+   ket_qua += [mot_vong_tham_lam(G, Binit, D, 'ngau_nhien', rng) for _ in range(so_lan_ngau_nhien)]
+   return min(ket_qua)
+
+   #Giải thích về cái này 1 chút vì quên quên =)) 
+   # min trên các cặp (K, T0) 
+   # cho đúng quy tắc: K nhỏ nhất, hòa thì T nhỏ nhất, 
+   # vì Python so sánh tuple từ trái sang phải. random.Random(seed) 
+   # giúp kết quả lặp lại được giữa các lần chạy.
 
    
+# Cài đặt các điều kiện hội tụ 
+import math
+
+def can_thoi_gian(n, so_B, D, LB, UB):
+    Ts = (n - so_B + D) // (D + 1)          # = ceil((n - |B|) / (D+1)), dùng số nguyên
+    T_UB = UB - so_B
+    T_LB = (n - LB) // D + 1
+    T_ht = max(1, min(Ts, T_UB, T_LB))
+    T_init = max(1, min(T_ht, math.ceil(1.5 * math.sqrt(n))))
+    return T_ht, T_init, Ts, T_UB, T_LB
+
+
+#Gói lại thành hàm tiền xử lí 
+def tien_xu_ly(G, V, Binit, D):
+    n = len(V)
+    so_B = len(set(Binit))
+    delta = khoang_cach_ngan_nhat_tu_B(G, Binit)
+    LB = can_duoi(G, Binit, D)
+    UB, T0 = can_tren_tham_lam(G, Binit, D)
+    if UB == LB:                    # tham lam đã đạt cận dưới: tối ưu, khỏi cần SAT
+        return dict(delta=delta, LB=LB, UB=UB, T0=T0, xong=True)
+    T_ht, T_init, Ts, T_UB, T_LB = can_thoi_gian(n, so_B, D, LB, UB)
+    return dict(delta=delta, LB=LB, UB=UB, T0=T0, Ts=Ts, T_UB=T_UB, T_LB=T_LB,
+                T_ht=T_ht, T_init=T_init, xong=False)
