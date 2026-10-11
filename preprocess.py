@@ -32,7 +32,40 @@ def menh_de_don (solver, V, b_var, delta, t_bat_dau, t_ket_thuc):
 
 # Cận trên dùng Greedy
 
+def tham_lam (G, Binit, D, quy_tac, rng=None):
+# lấy cái rgn trong cái python random để quy số lúc làm cái bước tham lam cuối
+   chay = set(Binit)
+   bao_ve = set()
+   so_vong = 0
 
+   while True:
+      de_doa = {u for v in chay for u in G.neighbors(v) } - chay - bao_ve 
+      #tập đỉnh đe dọa sẽ không bao gồm thằng đã cháy hoặc đã bảo vê
+      if not de_doa:
+         return len(chay), so vong 
+      so_chon = min(D,len(de_doa)) 
+      
+      #Cài tên cho giống cái văn bản ttuowcs còn cái sort bên trong để code khác
+      if quy_tac == 'id':
+         so_chon = min(D, len(de_doa))
+      if quy_tac == 'id':
+         chon = sorted(de_doa)[:so_chon]                                    # C1
+      elif quy_tac == 'bac':
+         chon = sorted(de_doa, key=lambda x: (-G.degree(x), x))[:so_chon]   # C2
+         # key là để Tham số chỉ định tiêu chí tùy chỉnh để Python 
+         # dùng làm cơ sở so sánh và sắp xếp các phần tử
+
+         # cái lalmda là 1 cái cài cho key để định nghĩa được cái hàm (quy tắc sắp xếp)
+
+      else:
+         chon = rng.sample(sorted(de_doa), so_chon)                         # C3
+
+      # Có cài cái 2 chấm trước mấy con số chọn để nó lấy cái phần tử đầu tiên cho đến vị
+      #trí của số được chọn -> chỉ lấy đúng số đỉnh cho phép
+   
+      bao_ve.update(chon)
+      chay |= (de_doa - set(chon))               # đỉnh bị đe dọa mà không được bảo vệ thì cháy
+      so_vong += 1
 
 
    
