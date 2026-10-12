@@ -30,7 +30,8 @@ def giai_sat_thuong(G, V, Binit, T, D):
             b_var[(v, t)] = vpool.id(f'b_{v}_{t}')
             d_var[(v, t)] = vpool.id(f'd_{v}_{t}')
             a_var[(v, t)] = vpool.id(f'a_{v}_{t}')
-            h_var[(v, t)] = vpool.id(f'h_{v}_{t}')  
+    for t in range(T + 1):   
+        h_var[t] = vpool.id(f'h_{t}')  
 
     # Ràng buộc ban đầu (khi t = 0)
 
@@ -68,10 +69,10 @@ def giai_sat_thuong(G, V, Binit, T, D):
             solver.add_clause([a_var[(v, t)], -d_var[(v, t)], d_var[(v, t-1)]]) #Phép 7
 
         # Mỗi bước chỉ được đặt tối đa D lính mới
-        lits = [a_var[(v, t)] for v in V]
-        card = CardEnc.atmost(lits=lits, bound=D, vpool=vpool, encoding=EncType.seqcounter)
-        for clause in card.clauses:
-            solver.add_clause(clause)   #Phép 8
+            lits = [a_var[(v, t)] for v in V]
+            card = CardEnc.atmost(lits=lits, bound=D, vpool=vpool, encoding=EncType.seqcounter)
+            for clause in card.clauses:
+                solver.add_clause(clause)   #Phép 8
 
         
     # Cài đặt cái lan truyền lửa, xét theo cả 2 chiều là (u,v) và (v,u)
@@ -95,7 +96,7 @@ def giai_sat_thuong(G, V, Binit, T, D):
     for v in V:
         for u in G.neighbors(v):
             for t in range (1, T + 1):
-                solver.add_clause([-b_var[(v, t)], b_var[(v, t-1)], b_var[(u, t-1)]]) #Phép 10
+                solver.add_clause([-b_var[(v, t)], b_var[(v, t-1)]]+ [b_var[(u, t-1)] for u in G.neighbors(v)]) #Phép 10
 
 
     # Đang chưa chắc về cái cách cài assumption cho h 
@@ -104,7 +105,7 @@ def giai_sat_thuong(G, V, Binit, T, D):
     for v in V:
         for u in G.neighbors(v):
             for t in range (1, T + 1):
-                solver.add_clause([-h_var[(t)], -b_var[(u, t)], b_var[(v, t)], d_var[(v, t)]]) #Phép 11
+                solver.add_clause([-h_var[t], -b_var[(u, t)], b_var[(v, t)], d_var[(v, t)]]) #Phép 11
 
 
     # Hàm mục tiêu, sài Itotalizer
