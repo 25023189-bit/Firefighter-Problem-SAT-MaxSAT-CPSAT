@@ -173,11 +173,11 @@ def ham_kiem_tra_va_in_thong_tin(G, V, Binit, T, D, thoi_gian_encode, thoi_gian_
 
 from GraphParser import doc_du_lieu_do_thi
 
-
+#AI
 if __name__ == "__main__":
     # Tất cả các dòng bên dưới câu lệnh 'if' này phải được thụt vào 1 Tab (4 dấu cách)
     thu_muc_du_lieu = "BBGRL"
-    ten_file = "50_ep0.1_0_gilbert_1.in"
+    ten_file = "50_ep0.1_0_gilbert_3.in"
     
     duong_dan_hoan_chinh = os.path.join(thu_muc_du_lieu, ten_file)
     
@@ -188,8 +188,13 @@ if __name__ == "__main__":
         print(f"Đã đọc xong đồ thị từ: {duong_dan_hoan_chinh}")
         
         T = 50
-        D = 2
         
-        print(f"Bắt đầu giải với T={T}, D={D}...\n")
-        
-        tim_can_tren(G, V, Binit, T, D)
+        # Thêm vòng lặp for để D tự tăng từ 2 lên 10
+        for D in range(1, 11):
+            # Các dòng trong vòng lặp for thụt vào thêm 1 Tab nữa (12 dấu cách)
+            print(f"Bắt đầu giải với T={T}, D={D}...\n")
+            
+            tim_can_tren(G, V, Binit, T, D)
+            
+            # Ngăn cách giữa các lần chạy để dễ nhìn kết quả
+            print("-" * 50)

@@ -70,7 +70,7 @@ def mot_vong_tham_lam (G, Binit, D, quy_tac, rng=None):
 
 # Bắt đầu chọn cái UB và To, thời gian mà vừa chạy xong 1 lần 
 def can_tren_tham_lam (G, Binit, D, so_lan_ngau_nhien=20, seed=0):
-   rng = random.Random(seed)
+   rng = random.Random(seed) # Cái này có thể tạo ra bộ 20 số khác nhau, đã thử in ra ở ngoài
    ket_qua = [mot_vong_tham_lam (G,Binit,D,'id'),mot_vong_tham_lam(G, Binit, D, 'bac')]
    ket_qua += [mot_vong_tham_lam(G, Binit, D, 'ngau_nhien', rng) for _ in range(so_lan_ngau_nhien)]
    return min(ket_qua)

@@ -1,0 +1,5 @@
+﻿File,Method,Nodes,Edges,Firefighters,Variables,Clauses,Encoding Time,Solving Time,Total Time,Status,Burned Nodes Found,Convergence Time
+100_ep0.075_0_gilbert_7.in,SAT_thuong,100,379,2,,,,,1.0612,ERROR,-,33
+100_ep0.075_0_gilbert_8.in,SAT_thuong,100,370,2,,,,,1.0505,ERROR,-,33
+100_ep0.075_0_gilbert_9.in,SAT_thuong,100,375,2,,,,,1.0812,ERROR,-,33
+100_ep0.075_0_gilbert_10.in,SAT_thuong,100,432,2,,,,,1.0668,ERROR,-,33

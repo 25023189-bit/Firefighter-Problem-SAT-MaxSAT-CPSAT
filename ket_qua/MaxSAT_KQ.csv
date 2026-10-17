@@ -1,0 +1,2 @@
+﻿File,Method,Nodes,Edges,Firefighters,Variables,Clauses,Encoding Time,Solving Time,Total Time,Status,Burned Nodes Found,Convergence Time
+50_ep0.1_0_gilbert_1.in,MaxSAT,50,107,2,12400,-,0.0455,10.2710,10.6529,OPTIMAL,7,6
