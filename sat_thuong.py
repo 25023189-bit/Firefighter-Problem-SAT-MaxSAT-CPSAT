@@ -29,8 +29,7 @@ def giai_sat_thuong(G, V, Binit, T, D, time_limit = 600):
             b_var[(v, t)] = vpool.id(f'b_{v}_{t}')
             d_var[(v, t)] = vpool.id(f'd_{v}_{t}')
             a_var[(v, t)] = vpool.id(f'a_{v}_{t}')
-    for t in range(T + 1):   
-        h_var[t] = vpool.id(f'h_{t}')  
+        h_var[T] = vpool.id(f'h_{T}')  
 
 # Ràng buộc ban đầu (khi t = 0)
 
@@ -75,7 +74,7 @@ def giai_sat_thuong(G, V, Binit, T, D, time_limit = 600):
         for clause in card.clauses:
             solver.add_clause(clause)   #Phép 8
 
-#set up 1 cái đỉnh kề v để dùng 
+# Set up 1 cái đỉnh kề v để dùng 
     dinh_ke = {}
     for v in V:
         dinh_ke[v] = list(G.neighbors(v))
@@ -87,69 +86,44 @@ def giai_sat_thuong(G, V, Binit, T, D, time_limit = 600):
     
     for v in V:
         for t in range (1, T + 1):
-            solver.add_clause([-b_var[(v, t)], b_var[(v, t-1)]] + [b_var[(u, t-1)] for u in dinh_ke_v]) #Phép 10
+            solver.add_clause([-b_var[(v, t)], b_var[(v, t-1)]] + [b_var[(u, t-1)] for u in dinh_ke[v]]) #Phép 10
 
     for v in V:
         for u in dinh_ke[v]:
             for t in range (1, T + 1):
-                solver.add_clause([-h_var[t], -b_var[(u, t)], b_var[(v, t)], d_var[(v, t)]]) #Phép 11
+                solver.add_clause([-h_var[T], -b_var[(u, T)], b_var[(v, T)], d_var[(v, T)]]) #Phép 11
 
 
-    # Hàm mục tiêu, sài Itotalizer
-
-    T_check = T
-    b_lits_at_T = [b_var[(v, T_check)] for v in V]  # Chỉ lấy danh sách b_{v, T}
-    max_K = len(V)
-    it = ITotalizer(lits=b_lits_at_T, ubound=max_K, top_id=vpool.top)
-    for clause in it.cnf.clauses:
+    lits =  [b_var[(v,T)] for v in V ]
+    it = ITotalizer(lits = lits, ubound = len(V), top_id = vpool.top)
+    for clause in it.cnf.clauses :
         solver.add_clause(clause)
+    if it.top_id > vpool.top:
+        vpool.occupy(vpool.top + 1, it.top_id)
 
-
-# Thêm cái ngắt
-    t_encode = time.perf_counter() - thoi_gian_bat_dau_encode
+    t_encode =  time.perf_counter() - thoi_gian_bat_dau_encode
     thoi_gian_bat_dau_solve = time.perf_counter()
-    h_assumptions = [h_var[T_check]] + [-h_var[t]] for t in range (1, T_check)
     
-
-
-
-    # Cài cái vòng lặp liên tục để nó tự chạy theo T tự thử 
-
-    h_assumptions = [h_var[T_check]] + [-h_var[t] for t in range(1, T_check)]
-
+    h_assumptions = [h_var[T]]
     found_opt = False
     best_K = None
-    for K in range(0, max_K + 1):
-        
-        # phủ định lại cái thằng it thì nó sẽ được cái nhỏ hơn haowjc bằng vì cái gốc của nó là lớn hơn
-        k_assumption = [-it.rhs[K]] if K < max_K else []
-        # Cộng tất cả các assumption lại với nhau
-        full_assumptions = h_assumptions + k_assumption
-
-        is_sat = solver.solve(assumptions=full_assumptions)
-        
-        if is_sat:
-            print(f"Số đỉnh cháy tối đa K = {K} tại T = {T_check}")
-            model = solver.get_model()
+    for K in range (0, len (V) + 1):
+        k_assumption = [-it.rhs[K]] if K < len(it.rhs) else []
+        if solver.solve(assumptions=h_assumptions + k_assumption):
             found_opt = True
             best_K = K
             break
-        else:
-            print(f"Không thể dập lửa với K = {K}")
-
-    it.delete()  
 
     t_solve = time.perf_counter() - thoi_gian_bat_dau_solve
-    so_bien = vpool.top
-
+    so_bien = max(vpool.top, it.top_id)
+    it.delete()
+    solver.delete()
     return found_opt, best_K, t_encode, t_solve, so_bien
 
 
-# Dùng AI viết main
 
-import os
-from GraphParser import doc_du_lieu_do_thi, liet_ke_file
-# from Sat_Thuong import giai_sat_thuong # Nhớ import hàm của bạn
+
+# Dùng AI viết main
 
 if __name__ == "__main__":
     thu_muc_du_lieu = "BBGRL"
