@@ -17,8 +17,8 @@ from Tien_Xu_Li import tien_xu_ly,menh_de_don
 def giai_sat_thuong(G, V, Binit, D, time_limit = 600):
     thoi_gian_bat_dau_encode = time.perf_counter()
     
-    txl = tien_xu_ly(G,V,D,Binit)
-    if txl['Xong']:
+    txl = tien_xu_ly(G,V,Binit,D)
+    if txl['xong']:
         t_encode = time.perf_counter() - thoi_gian_bat_dau_encode
         return True, txl['UB'], t_encode,0,0 
     T = txl['T_init']
@@ -26,8 +26,6 @@ def giai_sat_thuong(G, V, Binit, D, time_limit = 600):
     LB = txl['LB']
 
 
-    
-    
     solver = Solver( name= 'glucose3')
     vpool = IDPool()
     b_var = {}
@@ -159,7 +157,7 @@ if __name__ == "__main__":
             # Vòng lặp cho D chạy từ 2 đến 10
             for D in range(1, 11):
                 
-                is_sat, K_toi_uu, t_encode, t_solve, so_bien = giai_sat_thuong(G, V, Binit, T, D)
+                is_sat, K_toi_uu, t_encode, t_solve, so_bien = giai_sat_thuong(G, V, Binit, D)
                 
                 trang_thai = "optimal" if is_sat else "unsat"
                 muc_tieu = str(K_toi_uu) if is_sat else "-"
