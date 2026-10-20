@@ -12,10 +12,22 @@ from pysat.formula import IDPool
 from pysat.solvers import Solver
 from pysat.card import ITotalizer
 from GraphParser import doc_du_lieu_do_thi, liet_ke_file
-from Tien_Xu_Li import tien_xu_ly
+from Tien_Xu_Li import tien_xu_ly,menh_de_don
 
-def giai_sat_thuong(G, V, Binit, T, D, time_limit = 600):
+def giai_sat_thuong(G, V, Binit, D, time_limit = 600):
     thoi_gian_bat_dau_encode = time.perf_counter()
+    
+    txl = tien_xu_ly(G,V,D,Binit)
+    if txl['Xong']:
+        t_encode = time.perf_counter() - thoi_gian_bat_dau_encode
+        return True, txl['UB'], t_encode,0,0 
+    T = txl['T_init']
+    UB = txl['UB']
+    LB = txl['LB']
+
+
+    
+    
     solver = Solver( name= 'glucose3')
     vpool = IDPool()
     b_var = {}
@@ -29,7 +41,8 @@ def giai_sat_thuong(G, V, Binit, T, D, time_limit = 600):
             b_var[(v, t)] = vpool.id(f'b_{v}_{t}')
             d_var[(v, t)] = vpool.id(f'd_{v}_{t}')
             a_var[(v, t)] = vpool.id(f'a_{v}_{t}')
-        h_var[T] = vpool.id(f'h_{T}')  
+    h_var[T] = vpool.id(f'h_{T}')  
+    menh_de_don(solver, V, b_var, txl['delta'], 1, T)
 
 # Ràng buộc ban đầu (khi t = 0)
 
@@ -90,12 +103,11 @@ def giai_sat_thuong(G, V, Binit, T, D, time_limit = 600):
 
     for v in V:
         for u in dinh_ke[v]:
-            for t in range (1, T + 1):
-                solver.add_clause([-h_var[T], -b_var[(u, T)], b_var[(v, T)], d_var[(v, T)]]) #Phép 11
+            solver.add_clause([-h_var[T], -b_var[(u, T)], b_var[(v, T)], d_var[(v, T)]]) #Phép 11
 
 
     lits =  [b_var[(v,T)] for v in V ]
-    it = ITotalizer(lits = lits, ubound = len(V), top_id = vpool.top)
+    it = ITotalizer(lits = lits, ubound = UB, top_id = vpool.top)
     for clause in it.cnf.clauses :
         solver.add_clause(clause)
     if it.top_id > vpool.top:
@@ -107,8 +119,8 @@ def giai_sat_thuong(G, V, Binit, T, D, time_limit = 600):
     h_assumptions = [h_var[T]]
     found_opt = False
     best_K = None
-    for K in range (0, len (V) + 1):
-        k_assumption = [-it.rhs[K]] if K < len(it.rhs) else []
+    for K in range (LB,UB): 
+        k_assumption = [-it.rhs[K]]
         if solver.solve(assumptions=h_assumptions + k_assumption):
             found_opt = True
             best_K = K
