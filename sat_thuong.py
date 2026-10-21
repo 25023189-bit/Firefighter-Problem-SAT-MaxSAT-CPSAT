@@ -1,18 +1,13 @@
-import argparse
-import math
 import os
-import random
 import time
-from itertools import combinations
 import threading
-import networkx as nx
 
-from pysat.card import CardEnc, EncType
+from pysat.card import CardEnc, EncType, ITotalizer
 from pysat.formula import IDPool
 from pysat.solvers import Solver
-from pysat.card import ITotalizer
+
 from GraphParser import doc_du_lieu_do_thi, liet_ke_file
-from Tien_Xu_Li import tien_xu_ly,menh_de_don
+from Tien_Xu_Li import tien_xu_ly, menh_de_don
 
 def tao_buoc(solver, vpool, V, dinh_ke, Binit, D, b_var, d_var, a_var, t_tu, t_den):
 # Khai báo biến
@@ -98,7 +93,7 @@ def giai_sat_thuong(G, V, Binit, D, time_limit = 600):
     txl = tien_xu_ly(G,V,Binit,D)
     if txl['xong']:
         t_encode = time.perf_counter() - thoi_gian_bat_dau_encode
-        return True, txl['UB'], t_encode,0,0 
+        return 'optimal(greedy)', txl['UB'], t_encode,0,0 
     T = txl['T_init']
     UB = txl['UB']
     LB = txl['LB']
@@ -109,72 +104,97 @@ def giai_sat_thuong(G, V, Binit, D, time_limit = 600):
     d_var = {}
     a_var = {}
     h_var = {}
+    it = None
+    trang_thai = 'optimal'
+    K = UB
+    t_encode = 0
+    t_solve = 0
+    so_bien = 0
 
+    try:
 # Set up 1 cái đỉnh kề v để dùng 
-    dinh_ke = {}
-    for v in V:
-        dinh_ke[v] = list(G.neighbors(v))
+        dinh_ke = {}
+        for v in V:
+            dinh_ke[v] = list(G.neighbors(v))
 
-    tao_buoc(solver, vpool, V, dinh_ke, Binit, D, b_var, d_var, a_var, 0, T)
-    them_khong_che(solver, vpool, V, dinh_ke, b_var, d_var, h_var, T)
-    menh_de_don(solver, V, b_var, txl['delta'], 1, T)
-    it = them_totalizer(solver, vpool, V, b_var, T, UB)
+        tao_buoc(solver, vpool, V, dinh_ke, Binit, D, b_var, d_var, a_var, 0, T)
+        them_khong_che(solver, vpool, V, dinh_ke, b_var, d_var, h_var, T)
+        menh_de_don(solver, V, b_var, txl['delta'], 1, T)
+        
+        it = them_totalizer(solver, vpool, V, b_var, T, UB)
 
-    t_encode =  time.perf_counter() - thoi_gian_bat_dau_encode
-    thoi_gian_bat_dau_solve = time.perf_counter()
-    
-    h_assumptions = [h_var[T]]
-    K = UB  
-    while K - 1 >= LB:
-        k_assumption = [-it.rhs[K - 1]]     
-        if solver.solve(assumptions=h_assumptions + k_assumption):
-            model = solver.get_model()
-            dung = set(l for l in model if l > 0)              
-            K = sum(1 for v in V if b_var[(v, T)] in dung)         
-        else:
-            break
+        t_encode =  time.perf_counter() - thoi_gian_bat_dau_encode
+        thoi_gian_bat_dau_solve = time.perf_counter()
+        T_ht = txl['T_ht']
+        cac_T_da_xet = [T]
+        while K - 1 >= LB:
+            con_lai = time_limit - (time.perf_counter() - thoi_gian_bat_dau_solve)
+            if con_lai <= 0:
+                trang_thai = 'timeout'
+                break
+            h_assumptions = [h_var[T]] + [-h_var[t] for t in cac_T_da_xet if t < T]
+            k_assumption = [-it.rhs[K - 1]]
+            timer = threading.Timer(con_lai, solver.interrupt)
+            timer.start()
+            try:
+                ket_qua = solver.solve_limited(assumptions=h_assumptions + k_assumption, expect_interrupt=True)
+            finally:
+                timer.cancel()
+            if ket_qua is None:
+                trang_thai = 'timeout'
+                break
+            elif ket_qua:
+                model = solver.get_model()
+                dung = set(l for l in model if l > 0)              
+                K = sum(1 for v in V if b_var[(v, T)] in dung)         
+            elif T < T_ht:
+                T_cu = T
+                T = min(2 * T, T_ht)
+                it.delete()
+                tao_buoc(solver, vpool, V, dinh_ke, Binit, D, b_var, d_var, a_var, T_cu + 1, T)
+                them_khong_che(solver, vpool, V, dinh_ke, b_var, d_var, h_var, T)
+                menh_de_don(solver, V, b_var, txl['delta'], T_cu + 1, T)
+                it = them_totalizer(solver, vpool, V, b_var, T, UB)
+                cac_T_da_xet.append(T)
+            else:
+                break
 
-    t_solve = time.perf_counter() - thoi_gian_bat_dau_solve
-    so_bien = max(vpool.top, it.top_id)
-    it.delete()
-    solver.delete()
-    return True, K, t_encode, t_solve, so_bien
+        t_solve = time.perf_counter() - thoi_gian_bat_dau_solve
+        so_bien = max(vpool.top, it.top_id)
+    finally:
+        if it is not None:
+            it.delete()
+        solver.delete()
+    return trang_thai, K, t_encode, t_solve, so_bien
 
-# Dùng AI viết main
+
 
 if __name__ == "__main__":
     thu_muc_du_lieu = "BBGRL"
     danh_sach_file = liet_ke_file(thu_muc_du_lieu)
-    T = 50
+    TIME_LIMIT = 600 
+    D_LIST = range(1, 11)
 
-    # In tiêu đề bảng 1 lần cho tất cả các file
-    print("=" * 102)
-    print("BẢNG THỐNG KÊ CẤU TRÚC VÀ THỜI GIAN GIẢI SAT (TẤT CẢ CÁC FILE)")
-    print("=" * 102)
-    print(f"{'Instance':<25} | {'D':<3} | {'|V|':<5} | {'|E|':<5} | {'vars':<8} | {'t(encode)':<10} | {'t(solve)':<10} | {'status':<10} | {'objective':<9}")
-    print("-" * 102)
+    rong = 112
+    print("=" * rong)
+    print("BẢNG THỐNG KÊ CẤU TRÚC VÀ THỜI GIAN GIẢI SAT")
+    print(f"(timeout = {TIME_LIMIT}s, chỉ tính t(solve); khi timeout, objective là K tốt nhất tìm được)")
+    print("=" * rong)
+    print(f"{'Instance':<25} | {'D':<3} | {'|V|':<5} | {'|E|':<5} | {'vars':<8} | "
+          f"{'t(encode)':<10} | {'t(solve)':<10} | {'status':<16} | {'objective':<9}")
+    print("-" * rong)
 
-    for duong_dan_hoan_chinh in danh_sach_file:
-        ten_file = os.path.basename(duong_dan_hoan_chinh)
-        G, V, Binit = doc_du_lieu_do_thi(duong_dan_hoan_chinh)
-        
-        if G is not None:
-            so_canh = G.number_of_edges()
-            
-            # Vòng lặp cho D chạy từ 2 đến 10
-            for D in range(1, 11):
-                
-                is_sat, K_toi_uu, t_encode, t_solve, so_bien = giai_sat_thuong(G, V, Binit, D)
-                
-                trang_thai = "optimal" if is_sat else "unsat"
-                muc_tieu = str(K_toi_uu) if is_sat else "-"
-                
-                # Format số thập phân an toàn (đề phòng hàm trả về kiểu chuỗi khi timeout)
-                t_e = f"{t_encode:.4f}" if isinstance(t_encode, (int, float)) else str(t_encode)
-                t_s = f"{t_solve:.4f}" if isinstance(t_solve, (int, float)) else str(t_solve)
+    for duong_dan in danh_sach_file:
+        ten_file = os.path.basename(duong_dan)
+        G, V, Binit = doc_du_lieu_do_thi(duong_dan)
+        if G is None:
+            continue
 
-                print(f"{ten_file:<25} | {D:<3} | {len(V):<5} | {so_canh:<5} | {so_bien:<8} | {t_e:<10} | {t_s:<10} | {trang_thai:<10} | {muc_tieu:<9}")
-            
-            # In dòng kẻ ngang phân cách giữa các file cho dễ nhìn
-            print("-" * 102)
-        
+        so_canh = G.number_of_edges()
+        for D in D_LIST:
+            trang_thai, K, t_encode, t_solve, so_bien = giai_sat_thuong(
+                G, V, Binit, D, time_limit=TIME_LIMIT)
+
+            print(f"{ten_file:<25} | {D:<3} | {len(V):<5} | {so_canh:<5} | {so_bien:<8} | "
+                  f"{t_encode:<10.4f} | {t_solve:<10.4f} | {trang_thai:<16} | {K:<9}")
+        print("-" * rong)
