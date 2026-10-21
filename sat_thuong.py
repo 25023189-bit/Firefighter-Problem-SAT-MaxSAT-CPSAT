@@ -14,6 +14,84 @@ from pysat.card import ITotalizer
 from GraphParser import doc_du_lieu_do_thi, liet_ke_file
 from Tien_Xu_Li import tien_xu_ly,menh_de_don
 
+def tao_buoc(solver, vpool, V, dinh_ke, Binit, D, b_var, d_var, a_var, t_tu, t_den):
+# Khai báo biến
+    for v in V:
+        for t in range(t_tu, t_den + 1):
+            b_var[(v, t)] = vpool.id(f'b_{v}_{t}')
+            d_var[(v, t)] = vpool.id(f'd_{v}_{t}')
+            a_var[(v, t)] = vpool.id(f'a_{v}_{t}')
+
+# Ràng buộc ban đầu (khi t = 0)
+    if t_tu == 0:
+        for v in V:
+            if v in Binit:
+                solver.add_clause([b_var[(v, 0)]]) # Phép 1 
+            else :
+                solver.add_clause([-b_var[(v, 0)]]) # Phép 2
+            solver.add_clause([-d_var[(v, 0)]]) # Phép 3
+
+# Duy trì trạng thái khi t >= 1
+
+    for v in V:
+        for t in range(max(1, t_tu), t_den + 1):
+            solver.add_clause([-b_var[(v, t-1)], b_var[(v, t)]]) #Phép 4
+            solver.add_clause([-d_var[(v, t-1)], d_var[(v, t)]]) #Phép 5
+
+# Loại trừ tương khắc (không thể vừa cháy vừa được bảo vệ)
+    for v in V:
+        for t in range (max(1, t_tu), t_den + 1):
+            solver.add_clause([-b_var[(v, t)], -d_var[(v, t)]]) #Phép 6
+
+
+# Cài đặt biến a mới (khi 1 có thằng lính được đặt tại t thì đánh dấu a)
+# Đổi cái phép tương đương thành 3 mệnh đề 
+
+    for v in V:
+        for t in range (max(1, t_tu), t_den + 1):
+            # Nếu có lính mới ở v thì v đang được bảo vệ ở bước này
+            solver.add_clause([-a_var[(v, t)], d_var[(v, t)]]) #Phép 7
+            # Nếu có lính mới ở v thì v chưa được bảo vệ ở bước trước
+            solver.add_clause([-a_var[(v, t)], -d_var[(v, t-1)]]) #Phép 7
+            # Nếu bây giờ v được bảo vệ mà bước trước chưa, thì a phải đúng
+            solver.add_clause([a_var[(v, t)], -d_var[(v, t)], d_var[(v, t-1)]]) #Phép 7
+
+
+# Mỗi bước chỉ được đặt tối đa D lính mới
+    for t in range (max(1, t_tu), t_den + 1): # Cho thằng này ra ngoài để không bị lặp lại với mỗi cặp v,t
+        lits = [a_var[(v, t)] for v in V]
+        card = CardEnc.atmost(lits=lits, bound=D, vpool=vpool, encoding=EncType.seqcounter)
+            
+        for clause in card.clauses:
+            solver.add_clause(clause)   #Phép 8
+
+    for v in V: 
+        for u in dinh_ke[v]:    
+            for t in range (max(1, t_tu), t_den + 1):
+                solver.add_clause([-b_var[(u, t-1)], d_var[(v, t)], b_var[(v, t)]])  #Phép 9
+    
+    for v in V:
+        for t in range (max(1, t_tu), t_den + 1):
+            solver.add_clause([-b_var[(v, t)], b_var[(v, t-1)]] + [b_var[(u, t-1)] for u in dinh_ke[v]]) #Phép 10
+
+
+def them_khong_che(solver, vpool, V, dinh_ke, b_var, d_var, h_var, T):
+    h_var[T] = vpool.id(f'h_{T}')  
+    for v in V:
+        for u in dinh_ke[v]:
+            solver.add_clause([-h_var[T], -b_var[(u, T)], b_var[(v, T)], d_var[(v, T)]]) #Phép 11
+
+
+def them_totalizer(solver, vpool, V, b_var, T, UB):
+    lits =  [b_var[(v,T)] for v in V ]
+    it = ITotalizer(lits = lits, ubound = UB, top_id = vpool.top)
+    for clause in it.cnf.clauses :
+        solver.add_clause(clause)
+    if it.top_id > vpool.top:
+        vpool.occupy(vpool.top + 1, it.top_id)
+    return it
+
+
 def giai_sat_thuong(G, V, Binit, D, time_limit = 600):
     thoi_gian_bat_dau_encode = time.perf_counter()
     
@@ -24,8 +102,7 @@ def giai_sat_thuong(G, V, Binit, D, time_limit = 600):
     T = txl['T_init']
     UB = txl['UB']
     LB = txl['LB']
-
-
+    
     solver = Solver( name= 'glucose3')
     vpool = IDPool()
     b_var = {}
@@ -33,105 +110,35 @@ def giai_sat_thuong(G, V, Binit, D, time_limit = 600):
     a_var = {}
     h_var = {}
 
-# Khai báo biến
-    for v in V:
-        for t in range(T + 1):
-            b_var[(v, t)] = vpool.id(f'b_{v}_{t}')
-            d_var[(v, t)] = vpool.id(f'd_{v}_{t}')
-            a_var[(v, t)] = vpool.id(f'a_{v}_{t}')
-    h_var[T] = vpool.id(f'h_{T}')  
-    menh_de_don(solver, V, b_var, txl['delta'], 1, T)
-
-# Ràng buộc ban đầu (khi t = 0)
-
-    for v in V:
-        if v in Binit:
-            solver.add_clause([b_var[(v, 0)]]) # Phép 1 
-        else :
-            solver.add_clause([-b_var[(v, 0)]]) # Phép 2
-        solver.add_clause([-d_var[(v, 0)]]) # Phép 3
-
-# Duy trì trạng thái khi t >= 1
-
-    for v in V:
-        for t in range(1, T + 1):
-            solver.add_clause([-b_var[(v, t-1)], b_var[(v, t)]]) #Phép 4
-            solver.add_clause([-d_var[(v, t-1)], d_var[(v, t)]]) #Phép 5
-
-# Loại trừ tương khắc (không thể vừa cháy vừa được bảo vệ)
-    for v in V:
-        for t in range (1, T + 1):
-            solver.add_clause([-b_var[(v, t)], -d_var[(v, t)]]) #Phép 6
-
-
-# Cài đặt biến a mới (khi 1 có thằng lính được đặt tại t thì đánh dấu a)
-# Đổi cái phép tương đương thành 3 mệnh đề 
-
-    for v in V:
-        for t in range (1, T + 1):
-            # Nếu có lính mới ở v thì v đang được bảo vệ ở bước này
-            solver.add_clause([-a_var[(v, t)], d_var[(v, t)]]) #Phép 7
-            # Nếu có lính mới ở v thì v chưa được bảo vệ ở bước trước
-            solver.add_clause([-a_var[(v, t)], -d_var[(v, t-1)]]) #Phép 7
-            # Nếu bây giờ v được bảo vệ mà bước trước chưa, thì a phải đúng
-            solver.add_clause([a_var[(v, t)], -d_var[(v, t)], d_var[(v, t-1)]]) #Phép 7
-
-
-# Mỗi bước chỉ được đặt tối đa D lính mới
-    for t in range (1, T + 1 ): # Cho thằng này ra ngoài để không bị lặp lại với mỗi cặp v,t
-        lits = [a_var[(v, t)] for v in V]
-        card = CardEnc.atmost(lits=lits, bound=D, vpool=vpool, encoding=EncType.seqcounter)
-            
-        for clause in card.clauses:
-            solver.add_clause(clause)   #Phép 8
-
 # Set up 1 cái đỉnh kề v để dùng 
     dinh_ke = {}
     for v in V:
         dinh_ke[v] = list(G.neighbors(v))
 
-    for v in V: 
-        for u in dinh_ke[v]:    
-            for t in range (1, T + 1 ):
-                solver.add_clause([-b_var[(u, t-1)], d_var[(v, t)], b_var[(v, t)]])  #Phép 9
-    
-    for v in V:
-        for t in range (1, T + 1):
-            solver.add_clause([-b_var[(v, t)], b_var[(v, t-1)]] + [b_var[(u, t-1)] for u in dinh_ke[v]]) #Phép 10
-
-    for v in V:
-        for u in dinh_ke[v]:
-            solver.add_clause([-h_var[T], -b_var[(u, T)], b_var[(v, T)], d_var[(v, T)]]) #Phép 11
-
-
-    lits =  [b_var[(v,T)] for v in V ]
-    it = ITotalizer(lits = lits, ubound = UB, top_id = vpool.top)
-    for clause in it.cnf.clauses :
-        solver.add_clause(clause)
-    if it.top_id > vpool.top:
-        vpool.occupy(vpool.top + 1, it.top_id)
+    tao_buoc(solver, vpool, V, dinh_ke, Binit, D, b_var, d_var, a_var, 0, T)
+    them_khong_che(solver, vpool, V, dinh_ke, b_var, d_var, h_var, T)
+    menh_de_don(solver, V, b_var, txl['delta'], 1, T)
+    it = them_totalizer(solver, vpool, V, b_var, T, UB)
 
     t_encode =  time.perf_counter() - thoi_gian_bat_dau_encode
     thoi_gian_bat_dau_solve = time.perf_counter()
     
     h_assumptions = [h_var[T]]
-    found_opt = False
-    best_K = None
-    for K in range (LB,UB): 
-        k_assumption = [-it.rhs[K]]
+    K = UB  
+    while K - 1 >= LB:
+        k_assumption = [-it.rhs[K - 1]]     
         if solver.solve(assumptions=h_assumptions + k_assumption):
-            found_opt = True
-            best_K = K
+            model = solver.get_model()
+            dung = set(l for l in model if l > 0)              
+            K = sum(1 for v in V if b_var[(v, T)] in dung)         
+        else:
             break
 
     t_solve = time.perf_counter() - thoi_gian_bat_dau_solve
     so_bien = max(vpool.top, it.top_id)
     it.delete()
     solver.delete()
-    return found_opt, best_K, t_encode, t_solve, so_bien
-
-
-
+    return True, K, t_encode, t_solve, so_bien
 
 # Dùng AI viết main
 

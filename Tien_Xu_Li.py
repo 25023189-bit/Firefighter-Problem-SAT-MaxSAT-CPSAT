@@ -28,7 +28,6 @@ def can_duoi (G,Binit,D):
   ke_B = {u for v in B for u in G.neighbors(v)} - B     # N(B) \ B
   return len(B) + max(0, len(ke_B) - D) # phép 15
 
-
 # Cận trên dùng Greedy
 
 def mot_vong_tham_lam (G, Binit, D, quy_tac, rng=None):
@@ -72,8 +71,9 @@ def can_tren_tham_lam (G, Binit, D, so_lan_ngau_nhien=20, seed=0):
    ket_qua += [mot_vong_tham_lam(G, Binit, D, 'ngau_nhien', rng) for _ in range(so_lan_ngau_nhien)]
    return min(ket_qua)
 
+
    #Giải thích về cái này 1 chút vì quên quên =)) 
-   # min trên các cặp (K, T0) 
+   # min trên các cặp (K, T0)
    # cho đúng quy tắc: K nhỏ nhất, hòa thì T nhỏ nhất, 
    # vì Python so sánh tuple từ trái sang phải. random.Random(seed) 
    # giúp kết quả lặp lại được giữa các lần chạy.
