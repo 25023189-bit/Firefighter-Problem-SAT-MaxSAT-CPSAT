@@ -1,4 +1,0 @@
-﻿File,Method,Nodes,Edges,Firefighters,Variables,Clauses,Encoding Time,Solving Time,Total Time,Status,Burned Nodes Found,Convergence Time
-100_ep0.075_0_gilbert_8.in,MaxSAT,100,370,2,,,,,1.0947,ERROR,-,33
-100_ep0.075_0_gilbert_9.in,MaxSAT,100,375,2,,,,,1.0679,ERROR,-,33
-100_ep0.075_0_gilbert_10.in,MaxSAT,100,432,2,,,,,1.0648,ERROR,-,33

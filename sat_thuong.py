@@ -87,13 +87,13 @@ def them_totalizer(solver, vpool, V, b_var, T, UB):
     return it
 
 
-def giai_sat_thuong(G, V, Binit, D, time_limit = 600):
+def giai_sat_thuong(G, V, Binit, D, time_limit = 1200):
     thoi_gian_bat_dau_encode = time.perf_counter()
     
     txl = tien_xu_ly(G,V,Binit,D)
     if txl['xong']:
         t_encode = time.perf_counter() - thoi_gian_bat_dau_encode
-        return 'optimal(greedy)', txl['UB'], t_encode,0,0 
+        return 'optimal(greedy)', txl['UB'], t_encode,0,0,0 
     T = txl['T_init']
     UB = txl['UB']
     LB = txl['LB']
@@ -110,6 +110,7 @@ def giai_sat_thuong(G, V, Binit, D, time_limit = 600):
     t_encode = 0
     t_solve = 0
     so_bien = 0
+    so_menh_de = 0
 
     try:
 # Set up 1 cái đỉnh kề v để dùng 
@@ -125,6 +126,7 @@ def giai_sat_thuong(G, V, Binit, D, time_limit = 600):
 
         t_encode =  time.perf_counter() - thoi_gian_bat_dau_encode
         thoi_gian_bat_dau_solve = time.perf_counter()
+        
         T_ht = txl['T_ht']
         cac_T_da_xet = [T]
         while K - 1 >= LB:
@@ -133,7 +135,7 @@ def giai_sat_thuong(G, V, Binit, D, time_limit = 600):
                 trang_thai = 'timeout'
                 break
             h_assumptions = [h_var[T]] + [-h_var[t] for t in cac_T_da_xet if t < T]
-            k_assumption = [-it.rhs[K - 1]]
+            k_assumption = [-it.rhs[K - 1]]  
             timer = threading.Timer(con_lai, solver.interrupt)
             timer.start()
             try:
@@ -161,26 +163,27 @@ def giai_sat_thuong(G, V, Binit, D, time_limit = 600):
 
         t_solve = time.perf_counter() - thoi_gian_bat_dau_solve
         so_bien = max(vpool.top, it.top_id)
+        so_menh_de = solver.nof_clauses()
     finally:
         if it is not None:
             it.delete()
         solver.delete()
-    return trang_thai, K, t_encode, t_solve, so_bien
+    return trang_thai, K, t_encode, t_solve, so_bien, so_menh_de
 
 
 
 if __name__ == "__main__":
-    thu_muc_du_lieu = "BBGRL"
+    thu_muc_du_lieu = "uuuu"
     danh_sach_file = liet_ke_file(thu_muc_du_lieu)
-    TIME_LIMIT = 600 
+    TIME_LIMIT = 1200
     D_LIST = range(1, 11)
 
-    rong = 112
+    rong = 124
     print("=" * rong)
     print("BẢNG THỐNG KÊ CẤU TRÚC VÀ THỜI GIAN GIẢI SAT")
     print(f"(timeout = {TIME_LIMIT}s, chỉ tính t(solve); khi timeout, objective là K tốt nhất tìm được)")
     print("=" * rong)
-    print(f"{'Instance':<25} | {'D':<3} | {'|V|':<5} | {'|E|':<5} | {'vars':<8} | "
+    print(f"{'Instance':<25} | {'D':<3} | {'|V|':<5} | {'|E|':<5} | {'vars':<8} | {'clauses':<9} | "
           f"{'t(encode)':<10} | {'t(solve)':<10} | {'status':<16} | {'objective':<9}")
     print("-" * rong)
 
@@ -192,9 +195,9 @@ if __name__ == "__main__":
 
         so_canh = G.number_of_edges()
         for D in D_LIST:
-            trang_thai, K, t_encode, t_solve, so_bien = giai_sat_thuong(
+            trang_thai, K, t_encode, t_solve, so_bien, so_menh_de = giai_sat_thuong(
                 G, V, Binit, D, time_limit=TIME_LIMIT)
 
-            print(f"{ten_file:<25} | {D:<3} | {len(V):<5} | {so_canh:<5} | {so_bien:<8} | "
+            print(f"{ten_file:<25} | {D:<3} | {len(V):<5} | {so_canh:<5} | {so_bien:<8} | {so_menh_de:<9} | "
                   f"{t_encode:<10.4f} | {t_solve:<10.4f} | {trang_thai:<16} | {K:<9}")
         print("-" * rong)

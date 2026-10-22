@@ -77,9 +77,6 @@ def can_tren_tham_lam (G, Binit, D, so_lan_ngau_nhien=20, seed=0):
    # cho đúng quy tắc: K nhỏ nhất, hòa thì T nhỏ nhất, 
    # vì Python so sánh tuple từ trái sang phải. random.Random(seed) 
    # giúp kết quả lặp lại được giữa các lần chạy.
-
-   
-# Cài đặt các điều kiện hội tụ 
 import math
 
 def can_thoi_gian(n, so_B, D, LB, UB):
@@ -87,7 +84,7 @@ def can_thoi_gian(n, so_B, D, LB, UB):
     T_UB = UB - so_B
     T_LB = (n - LB) // D + 1
     T_ht = max(1, min(Ts, T_UB, T_LB))
-    T_init = max(1, min(T_ht, math.ceil(1.5 * math.sqrt(n))))
+    T_init = max(1, min(T_ht, math.ceil(1.5 * (n))))
     return T_ht, T_init, Ts, T_UB, T_LB
 
 

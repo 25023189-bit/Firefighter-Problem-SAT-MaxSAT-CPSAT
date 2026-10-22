@@ -1,0 +1,6 @@
+﻿File,Method,Nodes,Edges,Firefighters,Variables,Clauses,Encoding Time,Solving Time,Total Time,Status,Burned Nodes Found,Convergence Time
+50_ep0.1_0_gilbert_1.in,SAT_thuong,50,107,2,,,,,2.5042,ERROR,-,6
+50_ep0.1_0_gilbert_1.in,SAT_thuong,50,107,2,1819,4568,0.0114,0.0042,0.9844,OPTIMAL,7,6
+50_ep0.1_0_gilbert_2.in,SAT_thuong,50,113,2,4602,14158,0.0237,20.4737,21.6166,OPTIMAL,31,17
+50_ep0.1_0_gilbert_3.in,SAT_thuong,50,117,2,1047,1923,0.0112,0.0032,0.9622,OPTIMAL,4,3
+50_ep0.1_0_gilbert_4.in,SAT_thuong,50,126,2,4610,14650,0.0305,185.3347,186.7846,OPTIMAL,36,17

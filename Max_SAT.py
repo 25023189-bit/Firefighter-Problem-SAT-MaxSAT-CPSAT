@@ -6,10 +6,23 @@ from hermax.non_incremental import EvalMaxSAT
 import os
 from GraphParser import doc_du_lieu_do_thi
 
+class DemMenhDe:
+    def __init__(self, solver):
+        self._s = solver
+        self.so_menh_de = 0
+    def add_clause(self, *a, **k):
+        self.so_menh_de += 1
+        return self._s.add_clause(*a, **k)
+    def add_soft_unit(self, *a, **k):
+        self.so_menh_de += 1
+        return self._s.add_soft_unit(*a, **k)
+    def __getattr__(self, name):
+        return getattr(self._s, name)
+
 def tim_can_tren(G, V, Binit, T, D):
     thoi_gian_bat_dau_encode = time.perf_counter()
     
-    solver = EvalMaxSAT()
+    solver = DemMenhDe(EvalMaxSAT())
     vpool = IDPool()
 
     b_var = {}
@@ -83,12 +96,13 @@ def tim_can_tren(G, V, Binit, T, D):
     else:
         trang_thai = "unsat"
 
+    so_menh_de = solver.so_menh_de
     solver.close()
 
-    return ham_kiem_tra_va_in_thong_tin(G, V, Binit, T, D, thoi_gian_encode, thoi_gian_solve, trang_thai, so_dinh_bi_chay_it_nhat, da_giai_duoc_tot_nhat, vpool, b_var, d_var)
+    return ham_kiem_tra_va_in_thong_tin(G, V, Binit, T, D, thoi_gian_encode, thoi_gian_solve, trang_thai, so_dinh_bi_chay_it_nhat, da_giai_duoc_tot_nhat, vpool, b_var, d_var, so_menh_de)
 
 
-def ham_kiem_tra_va_in_thong_tin(G, V, Binit, T, D, thoi_gian_encode, thoi_gian_solve, trang_thai, so_dinh_bi_chay_it_nhat, da_giai_duoc_tot_nhat, vpool, b_var, d_var):
+def ham_kiem_tra_va_in_thong_tin(G, V, Binit, T, D, thoi_gian_encode, thoi_gian_solve, trang_thai, so_dinh_bi_chay_it_nhat, da_giai_duoc_tot_nhat, vpool, b_var, d_var, so_menh_de):
     if trang_thai == "optimal" or trang_thai == "sat":
         b = {}
         d = {}
@@ -144,13 +158,13 @@ def ham_kiem_tra_va_in_thong_tin(G, V, Binit, T, D, thoi_gian_encode, thoi_gian_
     so_bien = vpool.top
     ten_instance = "graph_1"
 
-    print("\n" + "="*85)
+    print("\n" + "="*100)
     print(f"BẢNG 1: THỐNG KÊ CẤU TRÚC VÀ THỜI GIAN GIẢI SAT")
-    print("="*85)
-    print(f"{'Instance':<12} | {'|V|':<5} | {'|E|':<5} | {'vars':<6} | {'t(encode)':<10} | {'t(solve)':<10} | {'status':<10} | {'objective':<9}")
-    print("-" * 85)
-    print(f"{ten_instance:<12} | {len(V):<5} | {so_canh:<5} | {so_bien:<6} | {thoi_gian_encode:<10.4f} | {thoi_gian_solve:<10.4f} | {trang_thai:<10} | {str(so_dinh_bi_chay_it_nhat):<9}")
-    print("="*85)
+    print("="*100)
+    print(f"{'Instance':<12} | {'|V|':<5} | {'|E|':<5} | {'vars':<8} | {'clauses':<9} | {'t(encode)':<10} | {'t(solve)':<10} | {'status':<10} | {'objective':<9}")
+    print("-" * 100)
+    print(f"{ten_instance:<12} | {len(V):<5} | {so_canh:<5} | {so_bien:<8} | {so_menh_de:<9} | {thoi_gian_encode:<10.4f} | {thoi_gian_solve:<10.4f} | {trang_thai:<10} | {str(so_dinh_bi_chay_it_nhat):<9}")
+    print("="*100)
 
     if da_giai_duoc_tot_nhat is not None:
         tap_mo_hinh = set(da_giai_duoc_tot_nhat)
@@ -168,7 +182,7 @@ def ham_kiem_tra_va_in_thong_tin(G, V, Binit, T, D, thoi_gian_encode, thoi_gian_
             print(f"  - Đỉnh cháy: {dinh_bi_chay}")
             print(f"  - Đỉnh bảo vệ: {dinh_duoc_bao_ve} (Lính mới đặt tại: {linh_moi})")
 
-    return trang_thai, so_dinh_bi_chay_it_nhat
+    return trang_thai, so_dinh_bi_chay_it_nhat, so_menh_de, so_bien, round(thoi_gian_encode, 4), round(thoi_gian_solve, 4)
 
 
 from GraphParser import doc_du_lieu_do_thi
