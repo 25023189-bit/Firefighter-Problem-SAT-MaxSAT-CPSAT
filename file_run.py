@@ -1,6 +1,7 @@
 """
 Chạy thí nghiệm cho Firefighter (MaxSAT + SAT thường) và xuất kết quả ra file CSV.
 Hỗ trợ dừng giữa chừng (Ctrl+C) và chạy tiếp (Resume).
+Mặc định chỉ chạy SAT thường, với D (số lính cứu hỏa) từ 1 đến 10 trong một lần chạy.
 """
 import argparse
 import contextlib
@@ -236,11 +237,28 @@ def kiem_tra_import(danh_sach):
             sys.exit(f"[{pp}] Không nạp được {ten_module}.{ten_ham}: {type(e).__name__}: {e}")
 
 
+def parse_D(ds):
+    """Chấp nhận: 2  |  1 2 3  |  1-10  |  1-5 8 10  |  1,2,5-7"""
+    kq = []
+    for s in ds:
+        for phan in str(s).split(","):
+            phan = phan.strip()
+            if not phan:
+                continue
+            if "-" in phan:
+                a, b = phan.split("-", 1)
+                kq.extend(range(int(a), int(b) + 1))
+            else:
+                kq.append(int(phan))
+    return sorted(set(kq))
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--dir", default="BBGRL")
-    ap.add_argument("--phuong-phap", nargs="+", default=list(PHUONG_PHAP), choices=list(PHUONG_PHAP))
-    ap.add_argument("--D", type=int, nargs="+", default=[2])
+    ap.add_argument("--phuong-phap", nargs="+", default=["SAT_thuong"], choices=list(PHUONG_PHAP))
+    ap.add_argument("--D", nargs="+", default=["1-10"],
+                    help="Số lính cứu hỏa, vd: 2 | 1 2 3 | 1-10 | 1-5 8 10 (mặc định 1-10)")
     ap.add_argument("--so-lan", type=int, default=1)
     ap.add_argument("--gioi-han", type=float, default=TIME_LIMIT)
     ap.add_argument("--T", default="n")
@@ -249,6 +267,8 @@ def main(argv=None):
     ap.add_argument("--thu-muc-ket-qua", default="ket_qua")
     ap.add_argument("--tiep-tuc", default=None, help="Đường dẫn file CSV cũ muốn chạy tiếp")
     args = ap.parse_args(argv)
+
+    args.D = parse_D(args.D)
 
     # --gioi-han là giới hạn cho cả hai phương pháp (SAT thường đọc qua TIME_LIMIT)
     os.environ["FF_TIME_LIMIT"] = str(args.gioi_han)   # tiến trình con kế thừa
@@ -277,6 +297,7 @@ def main(argv=None):
 
     print("Ghi vào:", ", ".join(duong_dan_csv.values()))
     print("Đã có sẵn:", {pp: len(s) for pp, s in da_xong.items()}, "dòng (sẽ bỏ qua)")
+    print(f"Chạy D = {args.D}")
     print(f"Giới hạn thời gian: {args.gioi_han:.0f}s mỗi ca\n")
     print("---------------------------------------------------------")
 

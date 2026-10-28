@@ -1,4 +1,7 @@
 import os
+import csv
+import glob
+import datetime
 import time
 import threading
 
@@ -173,31 +176,87 @@ def giai_sat_thuong(G, V, Binit, D, time_limit = 1200):
 
 
 if __name__ == "__main__":
-    thu_muc_du_lieu = "uuuu"
+    thu_muc_du_lieu = "BBGRL"
     danh_sach_file = liet_ke_file(thu_muc_du_lieu)
     TIME_LIMIT = 1200
     D_LIST = range(1, 11)
+
+    thu_muc_ket_qua = "ket_qua"
+    duong_dan_csv = os.path.join(thu_muc_ket_qua, f"SAT_thuong_KQ_{datetime.date.today().isoformat()}.csv")
+    COT = ["File", "Method", "Nodes", "Edges", "Firefighters", "Variables", "Clauses",
+           "Encoding Time", "Solving Time", "Total Time", "Status", "Burned Nodes Found",
+           "Convergence Time"]
+    os.makedirs(thu_muc_ket_qua, exist_ok=True)
+    if not os.path.exists(duong_dan_csv) or os.path.getsize(duong_dan_csv) == 0:
+        with open(duong_dan_csv, "w", newline="", encoding="utf-8-sig") as f:
+            csv.DictWriter(f, fieldnames=COT).writeheader()
+
+    if not danh_sach_file:
+        print(f"KHÔNG TÌM THẤY file .in trong thư mục: {os.path.abspath(thu_muc_du_lieu)}")
+        print(f"(thư mục đang chạy: {os.getcwd()})")
+
+    da_xong = set()
+    for file_cu in glob.glob(os.path.join(thu_muc_ket_qua, "SAT_thuong_KQ*.csv")):
+        with open(file_cu, newline="", encoding="utf-8-sig") as f:
+            for r in csv.DictReader(f):
+                try:
+                    da_xong.add((r["File"], int(r["Firefighters"])))
+                except (KeyError, TypeError, ValueError):
+                    continue
 
     rong = 124
     print("=" * rong)
     print("BẢNG THỐNG KÊ CẤU TRÚC VÀ THỜI GIAN GIẢI SAT")
     print(f"(timeout = {TIME_LIMIT}s, chỉ tính t(solve); khi timeout, objective là K tốt nhất tìm được)")
+    print(f"Ghi vào: {os.path.abspath(duong_dan_csv)} (đã có {len(da_xong)} dòng, sẽ bỏ qua)")
     print("=" * rong)
     print(f"{'Instance':<25} | {'D':<3} | {'|V|':<5} | {'|E|':<5} | {'vars':<8} | {'clauses':<9} | "
           f"{'t(encode)':<10} | {'t(solve)':<10} | {'status':<16} | {'objective':<9}")
     print("-" * rong)
 
-    for duong_dan in danh_sach_file:
-        ten_file = os.path.basename(duong_dan)
-        G, V, Binit = doc_du_lieu_do_thi(duong_dan)
-        if G is None:
-            continue
+    try:
+        for duong_dan in danh_sach_file:
+            ten_file = os.path.basename(duong_dan)
+            G, V, Binit = doc_du_lieu_do_thi(duong_dan)
+            if G is None:
+                continue
 
-        so_canh = G.number_of_edges()
-        for D in D_LIST:
-            trang_thai, K, t_encode, t_solve, so_bien, so_menh_de = giai_sat_thuong(
-                G, V, Binit, D, time_limit=TIME_LIMIT)
+            so_canh = G.number_of_edges()
+            for D in D_LIST:
+                if (ten_file, D) in da_xong:
+                    continue
 
-            print(f"{ten_file:<25} | {D:<3} | {len(V):<5} | {so_canh:<5} | {so_bien:<8} | {so_menh_de:<9} | "
-                  f"{t_encode:<10.4f} | {t_solve:<10.4f} | {trang_thai:<16} | {K:<9}")
-        print("-" * rong)
+                txl = tien_xu_ly(G, V, Binit, D)
+                T_ht = 0 if txl['xong'] else txl['T_ht']
+
+                trang_thai, K, t_encode, t_solve, so_bien, so_menh_de = giai_sat_thuong(
+                    G, V, Binit, D, time_limit=TIME_LIMIT)
+
+                print(f"{ten_file:<25} | {D:<3} | {len(V):<5} | {so_canh:<5} | {so_bien:<8} | {so_menh_de:<9} | "
+                      f"{t_encode:<10.4f} | {t_solve:<10.4f} | {trang_thai:<16} | {K:<9}", flush=True)
+
+                moi = not os.path.exists(duong_dan_csv) or os.path.getsize(duong_dan_csv) == 0
+                with open(duong_dan_csv, "a", newline="", encoding="utf-8-sig") as f:
+                    w = csv.DictWriter(f, fieldnames=COT)
+                    if moi:
+                        w.writeheader()
+                    w.writerow({
+                        "File": ten_file,
+                        "Method": "SAT_thuong",
+                        "Nodes": len(V),
+                        "Edges": so_canh,
+                        "Firefighters": D,
+                        "Variables": so_bien,
+                        "Clauses": so_menh_de,
+                        "Encoding Time": round(t_encode, 4),
+                        "Solving Time": round(t_solve, 4),
+                        "Total Time": round(t_encode + t_solve, 4),
+                        "Status": "OPTIMAL" if trang_thai.startswith("optimal") else "TIMEOUT",
+                        "Burned Nodes Found": K,
+                        "Convergence Time": T_ht,
+                    })
+                    f.flush()
+                    os.fsync(f.fileno())
+            print("-" * rong)
+    except KeyboardInterrupt:
+        print("\nĐã dừng (Ctrl+C). Chạy lại cùng lệnh để chạy tiếp các ca chưa xong.")
