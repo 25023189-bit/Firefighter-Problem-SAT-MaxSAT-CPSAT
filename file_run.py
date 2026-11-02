@@ -2,6 +2,7 @@
 Chạy thí nghiệm cho Firefighter (MaxSAT + SAT thường) và xuất kết quả ra file CSV.
 Hỗ trợ dừng giữa chừng (Ctrl+C) và chạy tiếp (Resume).
 Mặc định chỉ chạy SAT thường, với D (số lính cứu hỏa) từ 1 đến 10 trong một lần chạy.
+Cột Status trong CSV chỉ có 3 giá trị: OPTIMAL, SAT, UNKNOWN.
 """
 import argparse
 import contextlib
@@ -59,8 +60,6 @@ def chay_maxsat(G, V, Binit, T, D, seed, bao_cao, T_ht):
     trang_thai, so_chay, so_menh_de, so_bien, t_enc, t_solve = kq
     if trang_thai == "optimal":
         status = "OPTIMAL"
-    elif trang_thai == "unsat":
-        status = "UNSAT"
     else:
         status = "UNKNOWN"
 
@@ -81,10 +80,10 @@ def chay_sat_thuong(G, V, Binit, T, D, seed, bao_cao, T_ht):
         trang_thai, K, t_enc, t_solve, so_bien, so_menh_de = giai_sat_thuong(
             G, V, Binit, D, time_limit=TIME_LIMIT)
 
-    status = "OPTIMAL" if trang_thai.startswith("optimal") else "TIMEOUT"
+    status = "OPTIMAL" if trang_thai.startswith("optimal") else "SAT"
     return {
         "Status": status,
-        "Burned Nodes Found": K,          # khi timeout: K tốt nhất tìm được
+        "Burned Nodes Found": K,          # khi hết giờ: K tốt nhất tìm được
         "Encoding Time": round(t_enc, 4),
         "Solving Time": round(t_solve, 4),
         "Variables": so_bien,
@@ -163,7 +162,7 @@ def chay_mot_lan(ten_pp, G, V, Binit, T, D, seed, gioi_han, T_ht):
 # 2. Xử lý CSV và chạy tiếp (Resume)
 # ---------------------------------------------------------------------------
 def doc_da_xong(duong_dan):
-    """Đọc CSV cũ để biết (File, D) nào đã xong. Dòng ERROR sẽ được chạy lại."""
+    """Đọc CSV cũ để biết (File, D) nào đã xong. Dòng ERROR (nếu còn từ bản cũ) sẽ được chạy lại."""
     if not os.path.exists(duong_dan):
         return set()
     xong = set()
@@ -190,6 +189,8 @@ def doc_da_xong_tat_ca(thu_muc, pp, them=None):
 
 
 def ghi_dong(duong_dan, dong):
+    if dong.get("Status") not in ("OPTIMAL", "SAT"):
+        dong["Status"] = "UNKNOWN"
     os.makedirs(os.path.dirname(duong_dan) or ".", exist_ok=True)
     moi = not os.path.exists(duong_dan) or os.path.getsize(duong_dan) == 0
     with open(duong_dan, "a", newline="", encoding="utf-8-sig") as f:
@@ -255,7 +256,7 @@ def parse_D(ds):
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dir", default="BBGRL")
+    ap.add_argument("--dir", default="xyz")
     ap.add_argument("--phuong-phap", nargs="+", default=["SAT_thuong"], choices=list(PHUONG_PHAP))
     ap.add_argument("--D", nargs="+", default=["1-10"],
                     help="Số lính cứu hỏa, vd: 2 | 1 2 3 | 1-10 | 1-5 8 10 (mặc định 1-10)")
@@ -328,6 +329,12 @@ def main(argv=None):
                         )
 
                         dong = tao_dong(pp, ten_file, G, T_val, D, kq, het_gio, loi, t_wall, T_ht)
+
+                        if dong.get("Status") == "ERROR":
+                            print(f"[{pp:<10}] {ten_file:<20} D={D:<2} | LỖI, không ghi CSV, "
+                                  f"sẽ chạy lại lần sau: {loi}", flush=True)
+                            continue
+
                         ghi_dong(duong_dan_csv[pp], dong)
                         da_xong[pp].add(khoa)
 
@@ -336,8 +343,6 @@ def main(argv=None):
                               f"Vars: {str(dong.get('Variables', '-')):<8} | "
                               f"Clauses: {str(dong.get('Clauses', '-')):<9} | "
                               f"T.Hội Tụ: {str(T_ht):<3} | T.Gian: {t_wall:.2f}s", flush=True)
-                        if dong.get("Status") == "ERROR":
-                            print("   => LỖI:", loi, flush=True)
 
     except KeyboardInterrupt:
         print("\nĐã dừng (Ctrl+C).")

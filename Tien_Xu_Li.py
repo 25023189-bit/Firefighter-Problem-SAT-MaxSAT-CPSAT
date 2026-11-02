@@ -70,7 +70,7 @@ def can_tren_tham_lam (G, Binit, D, so_lan_ngau_nhien=20, seed=0):
    ket_qua = [mot_vong_tham_lam (G,Binit,D,'id'),mot_vong_tham_lam(G, Binit, D, 'bac')]
    ket_qua += [mot_vong_tham_lam(G, Binit, D, 'ngau_nhien', rng) for _ in range(so_lan_ngau_nhien)]
    return min(ket_qua)
-
+   # seed này khi kiểm thử đã tạo ra 20 bộ dữ liệu khác nhau, không còn bị trùng lặp 
 
    #Giải thích về cái này 1 chút vì quên quên =)) 
    # min trên các cặp (K, T0)
