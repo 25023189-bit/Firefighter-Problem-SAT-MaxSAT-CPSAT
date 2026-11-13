@@ -11,10 +11,6 @@ from Tien_Xu_Li import tien_xu_ly, menh_de_don
 
 
 class MoHinh:
-    """Bọc CpModel với giao diện giống solver SAT:
-    - id(name)      : tạo biến bool, trả về số nguyên dương (như IDPool)
-    - add_clause(c) : thêm mệnh đề với literal dạng số nguyên (như pysat)
-    Nhờ vậy menh_de_don(...) từ Tien_Xu_Li vẫn dùng được nguyên xi."""
 
     def __init__(self):
         self.model = cp_model.CpModel()
@@ -36,7 +32,6 @@ class MoHinh:
 
 
 def tao_mo_hinh(m, V, dinh_ke, Binit, D, b_var, d_var, a_var, T):
-    """Dựng toàn bộ mô hình cho chân trời thời gian T (t = 0..T)."""
     for v in V:
         for t in range(0, T + 1):
             b_var[(v, t)] = m.id(f'b_{v}_{t}')
@@ -73,8 +68,6 @@ def tao_mo_hinh(m, V, dinh_ke, Binit, D, b_var, d_var, a_var, T):
 
 
 def them_khong_che(m, V, dinh_ke, b_var, d_var, T):
-    """Ép lửa bị khống chế tại T (trong bản SAT là literal h_T đưa vào assumptions,
-    ở đây là ràng buộc cứng vì mỗi T dựng một mô hình riêng)."""
     for v in V:
         for u in dinh_ke[v]:
             m.add_clause([-b_var[(u, T)], b_var[(v, T)], d_var[(v, T)]])
@@ -154,7 +147,7 @@ def giai_cp_sat(G, V, Binit, D, time_limit=1200, num_workers=8):
 
 
 if __name__ == "__main__":
-    thu_muc_du_lieu = "xyz"
+    thu_muc_du_lieu = "BBGRL"
     danh_sach_file = liet_ke_file(thu_muc_du_lieu)
     TIME_LIMIT = 1200
     D_LIST = range(1, 11)
