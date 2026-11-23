@@ -1,6 +1,10 @@
 <div align="center">
 
+<<<<<<< HEAD
 # Firefighter Problem: SAT, MaxSAT & CP-SAT Solvers
+=======
+# 🔥 Firefighter Problem — SAT, MaxSAT & CP-SAT Solvers
+>>>>>>> fd728c25e55b03a65986966a2443d87c7f520939
 
 **Exact solving of the Firefighter Problem through propositional encodings, with bound-based preprocessing and incremental horizon search.**
 
@@ -8,7 +12,11 @@
 ![SAT](https://img.shields.io/badge/SAT-Glucose3-orange)
 ![MaxSAT](https://img.shields.io/badge/MaxSAT-EvalMaxSAT-purple)
 ![CP-SAT](https://img.shields.io/badge/CP--SAT-OR--Tools-4285F4?logo=google&logoColor=white)
+<<<<<<< HEAD
 ![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red)
+=======
+![License](https://img.shields.io/badge/License-MIT-green)
+>>>>>>> fd728c25e55b03a65986966a2443d87c7f520939
 
 </div>
 
@@ -90,7 +98,11 @@ Time is discretised as $t \in \{0,1,\dots,T\}$.
 
 The objective is to minimise $\sum_{v} b_{v,T}$.
 
+<<<<<<< HEAD
 > Full details: [`docs/MODEL_AND_ALGORITHMS.md`](docs/MODEL_AND_ALGORITHMS.md). Reading the output files and reproducing the comparison: [`docs/RESULTS.md`](docs/RESULTS.md).
+=======
+> The full formal write-up of the encoding (version 4, final) is in [`docs/Encode.pdf`](docs/Encode.pdf).
+>>>>>>> fd728c25e55b03a65986966a2443d87c7f520939
 
 ### Preprocessing
 
@@ -99,15 +111,26 @@ Implemented in `Tien_Xu_Li.py` and shared by the SAT and CP-SAT solvers.
 | Step | Description |
 |---|---|
 | **Distance map δ(v)** | Multi-source BFS from *B*. Fire cannot reach *v* before step δ(v), so `¬b(v,t)` is added as a unit clause for all `1 ≤ t < δ(v)`. Unreachable vertices have δ = ∞ and never burn. |
+<<<<<<< HEAD
 | **Lower bound** | `LB = \|B\| + max(0, \|N(B)∖B\| − D)` — the first wave of fire threatens `N(B)∖B`, and at most *D* of those vertices can be saved. |
 | **Upper bound** | Greedy simulation with three selection rules: **C1** lowest id, **C2** highest degree, **C3** random (20 runs, fixed seed). `(UB, T₀)` is the lexicographic minimum of `(burned, rounds)`. |
 | **Early exit** | If `UB = LB` the greedy answer is provably optimal; no solver call is made (reported as `optimal(greedy)`). |
 | **Horizon bounds** | `T_s = ⌈(n−\|B\|)/(D+1)⌉`, `T_UB = UB − \|B\|`, `T_LB = ⌊(n−LB)/D⌋ + 1`, and `T_ht = max(1, min(T_s, T_UB, T_LB))` — a horizon beyond which no improvement is possible. The solver starts at `T_init = min(T_ht, ⌈1.5·n⌉)`; since `T_ht ≤ n`, this always equals `T_ht` (see the note below the search procedure). |
+=======
+| **Lower bound** | `LB = |B| + max(0, |N(B)∖B| − D)` — the first wave of fire threatens `N(B)∖B`, and at most *D* of those vertices can be saved. |
+| **Upper bound** | Greedy simulation with three selection rules: **C1** lowest id, **C2** highest degree, **C3** random (20 runs, fixed seed). `(UB, T₀)` is the lexicographic minimum of `(burned, rounds)`. |
+| **Early exit** | If `UB = LB` the greedy answer is provably optimal; no solver call is made (reported as `optimal(greedy)`). |
+| **Horizon bounds** | `T_s = ⌈(n−|B|)/(D+1)⌉`, `T_UB = UB − |B|`, `T_LB = ⌊(n−LB)/D⌋ + 1`, and `T_ht = max(1, min(T_s, T_UB, T_LB))` — a horizon beyond which no improvement is possible. The starting horizon is `T_init = min(T_ht, ⌈1.5·n⌉)`. |
+>>>>>>> fd728c25e55b03a65986966a2443d87c7f520939
 
 ### Search Procedure
 
 ```text
+<<<<<<< HEAD
 K ← UB,  T ← T_init                  # in the current code T_init = T_ht
+=======
+K ← UB,  T ← T_init
+>>>>>>> fd728c25e55b03a65986966a2443d87c7f520939
 build steps 0..T, unit clauses (13), containment flag, totalizer on {b(v,T)}
 loop:
     if K − 1 < LB:                       return K              # proven optimal
@@ -118,12 +141,19 @@ loop:
     else:                                return K              # UNSAT at T = T_ht → optimal
 ```
 
+<<<<<<< HEAD
 > **Note on the horizon.** The horizon-extension branch (`T < T_ht`) is implemented, but it is **never taken** with the current preprocessing: `T_init = min(T_ht, ⌈1.5·n⌉)` and `T_ht ≤ T_s ≤ n`, so `T_init = T_ht` and the solver encodes the full certified horizon from the start. The number of greedy rounds `T0` is computed but is not used to choose `T_init`. Starting from a shorter horizon (for example `⌈1.5·T0⌉`) would keep the first formulas smaller and is a natural improvement; it has not been evaluated here.
 
 Key design points:
 
 - **Incremental solving.** Glucose3 keeps its learnt clauses; the threshold *K* and the horizon flag `h(T)` are enforced through **assumptions**, never by rebuilding the formula.
 - **Certified horizon.** `T_ht` is a horizon beyond which no better solution can exist, so UNSAT at `T = T_ht` proves optimality.
+=======
+Key design points:
+
+- **Incremental solving.** Glucose3 keeps its learnt clauses; the threshold *K* and the horizon flag `h(T)` are enforced through **assumptions**, never by rebuilding the formula.
+- **Horizon doubling.** Starting with a short horizon keeps the formula small; the horizon grows geometrically only when the current one cannot be proven sufficient.
+>>>>>>> fd728c25e55b03a65986966a2443d87c7f520939
 - **Timeout handling.** On timeout the best incumbent *K* found so far is reported with status `TIMEOUT` (an upper bound, not a proof).
 
 ## Implemented Solvers
@@ -139,7 +169,11 @@ Same Boolean dynamics, but with OR-Tools CP-SAT:
 
 - At-most-*D* is a native **linear constraint** (no sequential counter).
 - The objective `Minimize Σ b(v,T)` is bounded by `LB ≤ Σ b(v,T) ≤ K−1`.
+<<<<<<< HEAD
 - Uses 8 workers. CP-SAT has no assumptions / incremental solving, so the model is **rebuilt** whenever it is solved again; with the current `T_init = T_ht` it is normally built once and solved to optimality (or until the time limit).
+=======
+- Uses 8 workers; the model is **rebuilt for each horizon** because CP-SAT has no assumptions / incremental solving.
+>>>>>>> fd728c25e55b03a65986966a2443d87c7f520939
 - Containment (`¬b(u,T) ∨ b(v,T) ∨ d(v,T)`) is a hard constraint at the final step.
 
 ## Repository Structure
@@ -149,9 +183,13 @@ Same Boolean dynamics, but with OR-Tools CP-SAT:
 ├── BBGRL/                  # Benchmark instances (*.in)
 ├── ket_qua/                # Output CSV files (created automatically)
 ├── docs/
+<<<<<<< HEAD
 │   ├── MODEL_AND_ALGORITHMS.md   # Model, preprocessing, search, back-ends
 │   ├── RESULTS.md                # Output format, reference file, reproduction
 │   └── Encode.pdf                # Formal description of the encoding (v4)
+=======
+│   └── Encode.pdf          # Formal description of the encoding (v4)
+>>>>>>> fd728c25e55b03a65986966a2443d87c7f520939
 ├── GraphParser.py          # .in reader → networkx graph, burning set
 ├── Tien_Xu_Li.py           # Preprocessing: δ, LB, UB (greedy), T bounds
 ├── Sat_Thuong.py           # Incremental SAT solver (Glucose3)
@@ -318,8 +356,13 @@ Raw results are in `ket_qua/` (`CP_SAT_KQ_*.csv`, `SAT_thuong_KQ_*.csv`, `MaxSAT
 - **Intended scale: up to ~100 vertices.** At 100 vertices CP-SAT already times out on about 10 % of the cases (29/300, mostly mid-range *D*, where the search space is largest).
 - **500 vertices and beyond:** the models grow to hundreds of thousands of variables and clauses, and solution quality degrades — at 500 vertices CP-SAT proves only 92/300 cases and its time-limited upper bounds are worse than the reference in 171 cases. These sizes are outside the practical range of the exact approach.
 - A `TIMEOUT` / `SAT` / `UNKNOWN` status means the reported value is an **upper bound only**.
+<<<<<<< HEAD
 - The CP-SAT solver does not support incremental solving, so any re-solve rebuilds the model.
 - Wall-clock overhead (model construction, worker start-up) can make a measured solving time exceed the configured limit (one CP-SAT case reached 1620 s against a 1200 s limit).
+=======
+- The CP-SAT solver does not support incremental solving, so it rebuilds the model for every horizon.
+- Wall-clock overhead (model construction, worker start-up) can make a measured solving time slightly exceed the configured limit.
+>>>>>>> fd728c25e55b03a65986966a2443d87c7f520939
 
 ## Authors
 
@@ -332,9 +375,13 @@ The CP-SAT solver was added after the initial SAT and MaxSAT experiments.
 
 ## License
 
+<<<<<<< HEAD
 This repository is published for **viewing and reference only**. Copyright © 2026 Nguyễn Kim Trung Đức and Bùi Thế Dũng. **All rights reserved.** You may not copy, modify, redistribute or use the code, or derived work, without written permission from the authors. See [LICENSE](LICENSE) for details.
 
 The benchmark instances (`BBGRL/`) and the reference file `results-BBGRL.csv` belong to their original authors and are **not** covered by this license; obtain them from the original source.
+=======
+Released under the [MIT License](LICENSE).
+>>>>>>> fd728c25e55b03a65986966a2443d87c7f520939
 
 If you use this work in academic research, please cite it:
 
