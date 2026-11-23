@@ -105,8 +105,8 @@ def liet_ke_file(thu_muc, duoi=".in"):
 
 
 if __name__ == "__main__":
-    # Doc thu tat ca file trong thu muc BBGRL (nam canh file nay) va in thong tin
-    thu_muc = os.path.join(os.path.dirname(os.path.abspath(__file__)), "BBGRL")
+    # Doc thu tat ca file trong thu muc dataset (nam canh file nay) va in thong tin
+    thu_muc = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dataset")
     ds = liet_ke_file(thu_muc)
     print(f"Tim thay {len(ds)} file trong {thu_muc}")
     for duong_dan in ds:

@@ -1,0 +1,2 @@
+﻿File,Method,Nodes,Edges,Firefighters,Variables,Clauses,Encoding Time,Solving Time,Total Time,Status,Burned Nodes Found,Convergence Time
+500_ep0.025_0_gilbert_8.in,CP_SAT,500,3098,2,252000,1627425,11.1122,1205.0924,1216.2046,TIMEOUT,491,167

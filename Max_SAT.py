@@ -190,7 +190,7 @@ from GraphParser import doc_du_lieu_do_thi
 #AI
 if __name__ == "__main__":
     # Tất cả các dòng bên dưới câu lệnh 'if' này phải được thụt vào 1 Tab (4 dấu cách)
-    thu_muc_du_lieu = "BBGRL"
+    thu_muc_du_lieu = "dataset"
     ten_file = "50_ep0.1_0_gilbert_3.in"
     
     duong_dan_hoan_chinh = os.path.join(thu_muc_du_lieu, ten_file)

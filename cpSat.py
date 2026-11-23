@@ -147,7 +147,7 @@ def giai_cp_sat(G, V, Binit, D, time_limit=1200, num_workers=8):
 
 
 if __name__ == "__main__":
-    thu_muc_du_lieu = "BBGRL"
+    thu_muc_du_lieu = "dataset"
     danh_sach_file = liet_ke_file(thu_muc_du_lieu)
     TIME_LIMIT = 1200
     D_LIST = range(1, 11)
